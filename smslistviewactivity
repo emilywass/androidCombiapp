@@ -1,0 +1,186 @@
+
+import java.util.Locale;
+
+import android.os.Bundle;
+import android.app.Activity;
+import android.app.ListActivity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ListView;
+import android.widget.Toast;
+
+public class SmsListViewActivity extends Activity implements
+		TextToSpeech.OnInitListener {
+
+	SmsAdapter adapter;
+	IntentFilter intentFilter;
+	Intent i;
+	private TextToSpeech tts;
+	static String strToSpeech = "selected message ";
+
+	private BroadcastReceiver intentReceiver = new BroadcastReceiver() {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			// ---display the SMS received in the TextView---
+			SmsInformation smsObject = new SmsInformation();
+			String sms = intent.getExtras().getString("smsUpdate");
+			smsObject.setSms(sms);
+			// adapter.addToArrayList(smsObject);
+			adapter.updateSms();
+			adapter.notifyDataSetChanged();
+
+		}
+
+	};
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_sms_list_view);
+
+		
+
+		ListView listView = (ListView) findViewById(R.id.listView1);
+
+		listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		listView.setTextFilterEnabled(true);
+
+		adapter = new SmsAdapter(this);
+		adapter.getSmsInformation();
+
+		listView.setAdapter(adapter);
+
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+					long arg3) {
+				// TODO Auto-generated method stub
+				// Toast.makeText(getApplicationContext(), "" +
+				// arg2,Toast.LENGTH_LONG).show();
+				// adapter.delete(arg2);
+				SmsInformation smsInfo = (SmsInformation) adapter.getItem(arg2);
+				Toast.makeText(
+						getApplicationContext(),
+						"thread_id:" + smsInfo.getThread_id() + "/ _id:"
+								+ smsInfo.getId(), Toast.LENGTH_LONG).show();
+				// testing
+				adapter.deleteFromSmsContentProvider(arg2);
+
+			}
+
+		});
+		i = new Intent(this, SmsService.class);
+
+		startService(i);
+
+		intentFilter = new IntentFilter();
+		intentFilter.addAction("SMS_UPDATE");
+
+	}
+
+	public void deleteClick(View view) {
+		for (int i = 0; i < adapter.getCount(); i++) {
+			if (adapter.getArrayList().get(i).isSelected()) {
+				adapter.deleteFromSmsContentProvider(i);
+				
+				//testing
+				//adapter.deleteSMS(i);
+			}
+
+		}
+		adapter.updateSms();
+		adapter.notifyDataSetChanged();
+	}
+
+	public void speakOutClick(View view) {
+		tts = new TextToSpeech(this, this);
+		for(int i=0;i<adapter.getCount();i++){
+			if(adapter.getArrayList().get(i).isSelected()){
+				strToSpeech = strToSpeech + adapter.getArrayList().get(i).toString() + "   ";
+			}
+		}
+		speakOut();
+		//strToSpeech = "Google message ";
+		
+	}
+
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+
+		stopService(i);
+		
+		//Close the Text to Speech Library
+	    if(tts != null) {
+
+	    	tts.stop();
+	    	tts.shutdown();
+	        Log.d("SMS Speak", "TTS Destroyed");
+	    }
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.sms_list_view, menu);
+		return true;
+	}
+
+	@Override
+	protected void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+		unregisterReceiver(intentReceiver);
+	}
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+
+		registerReceiver(intentReceiver, intentFilter);
+	}
+
+	@Override
+	public void onInit(int status) {
+		// TODO Auto-generated method stub
+		if (status == TextToSpeech.SUCCESS) {
+
+			int result = tts.setLanguage(Locale.US);
+
+			if (result == TextToSpeech.LANG_MISSING_DATA
+					|| result == TextToSpeech.LANG_NOT_SUPPORTED) {
+				Log.e("TTS", "This Language is not supported");
+			} else {
+
+				speakOut();
+			}
+
+		} else {
+			Log.e("TTS", "Initilization Failed!");
+		}
+		strToSpeech = "selected message ";
+
+	}
+
+	public void speakOut() {
+
+		//String text = txtText.getText().toString();
+
+		tts.speak(strToSpeech, TextToSpeech.QUEUE_FLUSH, null);
+
+	}
+
+}
