@@ -1,0 +1,95 @@
+
+
+import java.net.URL;
+
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.AsyncTask;
+import android.os.IBinder;
+
+public class SmsService extends Service {
+
+	IntentFilter intentFilter;
+	static String sms;
+
+	private BroadcastReceiver intentReceiver = new BroadcastReceiver() {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			
+			sms = intent.getExtras().getString("sms");
+			
+			
+			
+			Intent broadcastIntent = new Intent();
+			broadcastIntent.setAction("SMS_UPDATE");
+			broadcastIntent.putExtra("smsUpdate", sms);
+			context.sendBroadcast(broadcastIntent);
+		}
+
+	};
+
+	
+	@Override
+	public void onCreate() {
+		// TODO Auto-generated method stub
+		super.onCreate();
+		//registerReceiver(intentReceiver, intentFilter);
+		intentFilter = new IntentFilter();
+		intentFilter.addAction("SMS_RECEIVED_ACTION");
+	}
+
+	@Override
+	public void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+		
+
+		unregisterReceiver(intentReceiver);
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		// TODO Auto-generated method stub
+		registerReceiver(intentReceiver, intentFilter);
+		
+		
+	
+		
+		
+		
+		return START_STICKY;
+	}
+	private class DoBackgroundTask extends AsyncTask<URL, Integer, Long> {
+
+		// this method will run in separate thread , you have to put the code
+		// that takes time(long running code) within this method
+
+		protected Long doInBackground(URL... urls) {
+		
+			return (long) 0;
+		}
+
+		// this method will be invoked in the UI thread
+		protected void onProgressUpdate(Integer... progress) {
+			
+		}
+
+		// this method will be invoked in the UI thread
+		protected void onPostExecute(Long result) {
+			
+			stopSelf();
+		}
+	}
+
+}
