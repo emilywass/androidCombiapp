@@ -23,8 +23,8 @@ public class MainActivity extends Activity {
 	}
 	
 	public void showCalendarClick(View view){
-		Intent i = new Intent(this,ShowCalendarActivity.class);
-		startActivity(i);
+		Intent intent = new Intent(this,ShowCalendarActivity.class);
+		startActivity(intent);
 	}
 	
 	public void manageAddressClick(View view){
